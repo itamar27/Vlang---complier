@@ -6,6 +6,7 @@ int yylex();
 #include <ctype.h>
 #include <string.h>
 
+/*helping functions*/
 void cpyTokenVal(char *src, char* dest);
 void buildFormat(FILE * out);
 void markVector(char *vec, char *size);
@@ -34,19 +35,19 @@ char vectorSize[256][11];
 %start Line
 
 %token Identifier Number Equal Operator ArrSize
-%token Semicolon OpenBracket ClosingBracket Index
+%token Semicolon OpenBracket ClosingBracket Index OpenParentheses ClosingParentheses
 %token Scl Vec
 %token Loop Print If
 
-%type <id> Identifier
-%type <id> Term
+%type <id>  Identifier
+%type <id>  Term  Block
 %type <num> Number ArrSize
 %type <exp> Exp
 %type <exp> Declare
 %type <exp> Statement
-%left <str> Operator
-%left <str> Equal 
-%left <str> Index
+%left <str> Operator Equal Index
+%left <str> OpenParentheses ClosingParentheses
+
 
 %union {
 	char str[1];
@@ -59,49 +60,66 @@ char vectorSize[256][11];
 
 /* descriptions of expected inputs     corresponding actions (in C) */
 
-Line    : Statement Semicolon				 {;}
-		| Assignment Semicolon				 {;}
-		| BlockStatement Block	 			 {;}
-		| Line Assignment Semicolon			 {;}
-		| Line Statement Semicolon			 {;}
-		| Line BlockStatement Block 		 {;} 
-		;
+Line    		: Statement Semicolon				{;}
+				| Assignment Semicolon				{;}
+				| BlockStatement Block	 			{;}
+				| Line Assignment Semicolon			{;}
+				| Line Statement Semicolon			{;}
+				| Line BlockStatement Block 		{;} 
+				;
 
-BlockStatement : Loop Exp 					{fprintf(yyout, "\tfor(int i = 0; i < %s; i++)\n{\n", $2);}
-			   | If Exp					    {fprintf(yyout, "if(%s){", $2);}
-			   ;	
+BlockStatement 	: Loop Exp									{fprintf(yyout, "\tfor(int i = 0; i < %s; i++)\n{\n", $2);}
+			   	| If Exp					    			{fprintf(yyout, "if(%s){", $2);}
+			   	;	
 
-Block : OpenBracket Line ClosingBracket      {fprintf(yyout,"\t}\n");}
-	  ;
+Block 		  	: OpenBracket Line ClosingBracket			{fprintf(yyout,"\t}\n");}
+				| OpenParentheses Exp ClosingParentheses	{
+															 cpyTokenVal($1, buff);
+														  	 cpyTokenVal($2, buff);
+														  	 cpyTokenVal($3, buff);
+														  	 strcpy($$, buff);
+														  	 buff[0] = '\n';
+														  	 indice = 0;
+															   }
+				;
 
-Statement : Exp								 {;}
-		  |	Declare 						 {;}
-		  | Print Exp						 {printCommandPrint($2);}
-		  ;
+Statement 	  	: Exp								 {;}
+		  		| Declare 							 {;}
+		  		| Print Exp						     {printCommandPrint($2);}
+				| Print Exp Block					 {	cpyTokenVal($2, buff);
+														cpyTokenVal($3, buff);
+														printCommandPrint(buff);
+														buff[0] = '\n';
+														indice = 0;
+													  }
+				| Print Block						 {printCommandPrint($2);}
+		  		;
 
-Assignment	: Term Equal Exp			 	 {printAssignment($1,$3);}
-		    ;
+Assignment	  	: Term Equal Exp			 	 	  {printAssignment($1,$3);}
+				| Term Equal Block 					  {;}
+		    	;
 
-Declare : Scl Identifier					 {fprintf(yyout,"\tint %s;\n", $2);}
-		| Vec Identifier ArrSize	 		 {fprintf(yyout,"\tint %s[%s];\n", $2, $3); markVector($2, $3);}
-		;
+Declare 		: Scl Identifier					 {fprintf(yyout,"\tint %s;\n", $2);}
+				| Vec Identifier ArrSize	 		 {fprintf(yyout,"\tint %s[%s];\n", $2, $3); markVector($2, $3);}
+				;
 
-Exp : Term 									 {;}
-	| Exp Operator Term 					 {cpyTokenVal($1, buff);
-											cpyTokenVal($2, buff);
-											cpyTokenVal($3, buff);
-											strcpy($$, buff);
-											buff[0] = '\n';
-											indice = 0;}	
-	;
+Exp 			: Term 									 {;}
+				| Exp Operator Term 					 {cpyTokenVal($1, buff);
+														  cpyTokenVal($2, buff);
+														  cpyTokenVal($3, buff);
+														  strcpy($$, buff);
+														  buff[0] = '\n';
+														  indice = 0;
+														  }	
+				;
 
-Term : Identifier 							{;}
-	 | Number								{;}
-	 | Identifier Index Term    			{printIndexing($1, $3);
-											strcpy($$, buff);
-											buff[0] = '\n';
-											indice = 0;}
-     ;
+Term 			: Identifier 							{;}
+	 			| Number								{;}
+	 			| Identifier Index Term    				{printIndexing($1, $3);
+														strcpy($$, buff);
+														buff[0] = '\n';
+														indice = 0;}
+     			;
 
 %%                     /* C code */
 
@@ -283,8 +301,8 @@ int main (int argc,char **argv) {
          	    return 1;
          	}
 		}
-     
      }
+	 
 	buildFormat(yyout);
 	yyparse ( );
 	fprintf(yyout, "\nreturn 0;\n}");

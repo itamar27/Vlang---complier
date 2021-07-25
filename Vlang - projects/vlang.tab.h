@@ -48,11 +48,13 @@
      OpenBracket = 264,
      ClosingBracket = 265,
      Index = 266,
-     Scl = 267,
-     Vec = 268,
-     Loop = 269,
-     Print = 270,
-     If = 271
+     OpenParentheses = 267,
+     ClosingParentheses = 268,
+     Scl = 269,
+     Vec = 270,
+     Loop = 271,
+     Print = 272,
+     If = 273
    };
 #endif
 
@@ -63,7 +65,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 51 "vlang.y"
+#line 52 "vlang.y"
 
 	char str[1];
 	char num[11];
@@ -74,7 +76,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 78 "vlang.tab.h"
+#line 80 "vlang.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

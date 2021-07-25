@@ -23,6 +23,8 @@ size            [{][0-9]+[}]
 ":"                    {return Index;}
 "{"                    {return OpenBracket;}
 "}"                    {return ClosingBracket;}
+"("                    {sscanf(yytext, "%s", yylval.str); return OpenParentheses;}
+")"                    {sscanf(yytext, "%s", yylval.str);return ClosingParentheses;}
 ";"                    {return Semicolon;}
 {identifier}		   {sscanf(yytext, "%s", yylval.id);return Identifier;}
 {number}               {sscanf(yytext, "%s", yylval.num); return Number;}
