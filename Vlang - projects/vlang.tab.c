@@ -82,18 +82,23 @@ void cpyTokenVal(char *src, char* dest);
 void buildFormat(FILE * out);
 void markVector(char *vec, char *size);
 int isVector(char * vec);
+void nullifyGlobals();
 void printVecs();    //DELETE ME! AND MY IMPLEMENTATION!
 
 /*print to file commands*/
 void printAssignment(char * left, char * right); 
 void printCommandPrint(char * name);
-void printIndexing(char * leftHand, char * rightHand);
-
+void printIndexing(char * leftHand, char * rightHand, char* dest);
+void printConstVector(char *vec, char *dest);
+void printOperator(char * left, char * right, char* op, char* dest);
+void printDotProduct(char* left, char* right, char *dest);
+void printParenthesesExp(char * exp, char *dest);
+void printComplex(char *left, char* right,char * dest);
  
 //Global varibales declartion
 extern FILE* yyin;
 extern FILE * yyout;
-int  cntVec = 0, indice = 0 ;
+int  cntVec = 0, indice = 0 ,cntTmpVec = 0;
 char buff[256];
 
 int isTmpVecExist[2] = {0,0}; 
@@ -103,7 +108,7 @@ char vectorSize[256][11];
 
 
 /* Line 189 of yacc.c  */
-#line 107 "vlang.tab.c"
+#line 112 "vlang.tab.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -135,17 +140,22 @@ char vectorSize[256][11];
      Equal = 260,
      Operator = 261,
      ArrSize = 262,
-     Semicolon = 263,
-     OpenBracket = 264,
-     ClosingBracket = 265,
-     Index = 266,
-     OpenParentheses = 267,
-     ClosingParentheses = 268,
-     Scl = 269,
-     Vec = 270,
-     Loop = 271,
-     Print = 272,
-     If = 273
+     Dot = 263,
+     Index = 264,
+     Semicolon = 265,
+     OpenBracket = 266,
+     CloseBracket = 267,
+     OpenParentheses = 268,
+     CloseParentheses = 269,
+     Comma = 270,
+     Scl = 271,
+     Vec = 272,
+     TmpVector = 273,
+     Loop = 274,
+     Print = 275,
+     If = 276,
+     OperatorLow = 277,
+     OperatorHigh = 278
    };
 #endif
 
@@ -156,18 +166,18 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 52 "vlang.y"
+#line 62 "vlang.y"
 
 	char str[1];
 	char num[11];
-	char exp[24];
+	char exp[100];
 	char id[12]; 
 	char type[3];
 	
 
 
 /* Line 214 of yacc.c  */
-#line 171 "vlang.tab.c"
+#line 181 "vlang.tab.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -179,7 +189,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 183 "vlang.tab.c"
+#line 193 "vlang.tab.c"
 
 #ifdef short
 # undef short
@@ -392,22 +402,22 @@ union yyalloc
 #endif
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  25
+#define YYFINAL  26
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   68
+#define YYLAST   100
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  19
+#define YYNTOKENS  24
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  9
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  25
+#define YYNRULES  28
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  47
+#define YYNSTATES  54
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   273
+#define YYMAXUTOK   278
 
 #define YYTRANSLATE(YYX)						\
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -442,7 +452,7 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18
+      15,    16,    17,    18,    19,    20,    21,    22,    23
 };
 
 #if YYDEBUG
@@ -451,30 +461,31 @@ static const yytype_uint8 yytranslate[] =
 static const yytype_uint8 yyprhs[] =
 {
        0,     0,     3,     6,     9,    12,    16,    20,    24,    27,
-      30,    34,    38,    40,    42,    45,    49,    52,    56,    60,
-      63,    67,    69,    73,    75,    77
+      30,    34,    36,    38,    41,    45,    49,    52,    56,    58,
+      62,    66,    70,    74,    78,    80,    82,    84,    88
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      20,     0,    -1,    23,     8,    -1,    24,     8,    -1,    21,
-      22,    -1,    20,    24,     8,    -1,    20,    23,     8,    -1,
-      20,    21,    22,    -1,    16,    26,    -1,    18,    26,    -1,
-       9,    20,    10,    -1,    12,    26,    13,    -1,    26,    -1,
-      25,    -1,    17,    26,    -1,    17,    26,    22,    -1,    17,
-      22,    -1,    27,     5,    26,    -1,    27,     5,    22,    -1,
-      14,     3,    -1,    15,     3,     7,    -1,    27,    -1,    26,
-       6,    27,    -1,     3,    -1,     4,    -1,     3,    11,    27,
-      -1
+      25,     0,    -1,    28,    10,    -1,    29,    10,    -1,    26,
+      27,    -1,    25,    29,    10,    -1,    25,    28,    10,    -1,
+      25,    26,    27,    -1,    19,    31,    -1,    21,    31,    -1,
+      11,    25,    12,    -1,    31,    -1,    30,    -1,    20,    31,
+      -1,    32,     5,    31,    -1,    32,     5,    27,    -1,    16,
+       3,    -1,    17,     3,     7,    -1,    32,    -1,    31,    23,
+      31,    -1,    31,    22,    31,    -1,    31,     8,    31,    -1,
+      13,    31,    14,    -1,    31,    15,    31,    -1,     3,    -1,
+      18,    -1,     4,    -1,    18,     9,    31,    -1,     3,     9,
+      31,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    63,    63,    64,    65,    66,    67,    68,    71,    72,
-      75,    76,    86,    87,    88,    89,    95,    98,    99,   102,
-     103,   106,   107,   116,   117,   118
+       0,    73,    73,    74,    75,    76,    77,    78,    81,    82,
+      85,    88,    89,    90,    93,    94,    97,    98,   101,   102,
+     103,   104,   105,   109,   112,   113,   114,   115,   120
 };
 #endif
 
@@ -484,10 +495,11 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "Identifier", "Number", "Equal",
-  "Operator", "ArrSize", "Semicolon", "OpenBracket", "ClosingBracket",
-  "Index", "OpenParentheses", "ClosingParentheses", "Scl", "Vec", "Loop",
-  "Print", "If", "$accept", "Line", "BlockStatement", "Block", "Statement",
-  "Assignment", "Declare", "Exp", "Term", 0
+  "Operator", "ArrSize", "Dot", "Index", "Semicolon", "OpenBracket",
+  "CloseBracket", "OpenParentheses", "CloseParentheses", "Comma", "Scl",
+  "Vec", "TmpVector", "Loop", "Print", "If", "OperatorLow", "OperatorHigh",
+  "$accept", "Line", "BlockStatement", "Block", "Statement", "Assignment",
+  "Declare", "Exp", "Term", 0
 };
 #endif
 
@@ -497,24 +509,25 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,   269,   270,   271,   272,   273
+     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
+     275,   276,   277,   278
 };
 # endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    19,    20,    20,    20,    20,    20,    20,    21,    21,
-      22,    22,    23,    23,    23,    23,    23,    24,    24,    25,
-      25,    26,    26,    27,    27,    27
+       0,    24,    25,    25,    25,    25,    25,    25,    26,    26,
+      27,    28,    28,    28,    29,    29,    30,    30,    31,    31,
+      31,    31,    31,    31,    32,    32,    32,    32,    32
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
        0,     2,     2,     2,     2,     3,     3,     3,     2,     2,
-       3,     3,     1,     1,     2,     3,     2,     3,     3,     2,
-       3,     1,     3,     1,     1,     3
+       3,     1,     1,     2,     3,     3,     2,     3,     1,     3,
+       3,     3,     3,     3,     1,     1,     1,     3,     3
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -522,35 +535,37 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,    23,    24,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    13,    12,    21,     0,    19,     0,     8,    21,
-       0,     0,    16,    14,     9,     1,     0,     0,     0,     4,
-       2,     3,     0,     0,    25,    20,     0,     0,    15,     7,
-       6,     5,    22,    18,    17,    10,    11
+       0,    24,    26,     0,     0,     0,    25,     0,     0,     0,
+       0,     0,     0,     0,    12,    11,    18,     0,     0,    18,
+      16,     0,     0,     8,    13,     9,     1,     0,     0,     0,
+       0,     4,     2,     3,     0,     0,     0,     0,     0,    28,
+      22,    17,    27,     7,     6,     5,     0,    21,    23,    20,
+      19,    15,    14,    10
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     8,     9,    22,    10,    11,    12,    13,    19
+      -1,    10,    11,    31,    12,    13,    14,    15,    19
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -6
+#define YYPACT_NINF -10
 static const yytype_int8 yypact[] =
 {
-      35,     3,    -6,    19,    43,    58,     7,    58,     9,    46,
-      40,    51,    -6,    50,    59,    58,    -6,    56,    50,    -6,
-      35,    58,    -6,    48,    50,    -6,    46,    57,    60,    -6,
-      -6,    -6,    58,     7,    -6,    -6,    27,    34,    -6,    -6,
-      -6,    -6,    -6,    -6,    50,    -6,    -6
+      62,    -5,   -10,    73,     3,     5,    16,    73,    73,    73,
+      32,    18,    17,    24,   -10,    77,    52,    73,    -3,   -10,
+     -10,    49,    73,    77,    77,    77,   -10,    18,    50,    63,
+      62,   -10,   -10,   -10,    73,    73,    73,    73,    13,   -10,
+     -10,   -10,   -10,   -10,   -10,   -10,    51,   -10,    -1,    10,
+      53,   -10,    77,   -10
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -6,    47,    -3,    -5,    -2,    -1,    -6,    -4,     0
+     -10,    29,    -9,    20,    -8,    -7,   -10,     6,     0
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -560,35 +575,44 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      14,    18,    23,    24,    29,    26,    27,    28,    14,    25,
-       1,     2,     1,     2,    15,    34,    20,    37,    38,    21,
-      14,    39,    16,     3,     4,     5,     6,     7,    43,    44,
-       1,     2,    42,    26,    27,    28,    14,    45,     1,     2,
-      32,     3,     4,     5,     6,     7,    17,    46,    30,     3,
-       4,     5,     6,     7,    32,    20,    32,    20,    21,    31,
-      21,     1,     2,    35,    33,    40,     0,    36,    41
+      16,    27,    28,    29,    17,    34,    20,    34,    21,    18,
+      16,    40,    35,    23,    24,    25,     1,     2,    34,    36,
+      37,    36,    37,    39,    30,    22,     3,    32,    42,    30,
+      16,     6,    26,    37,    33,     1,     2,    27,    28,    29,
+      47,    48,    49,    50,    52,     3,    16,    43,     4,     5,
+       6,     7,     8,     9,     1,     2,    41,    38,    51,    46,
+      44,    34,     0,    53,     3,     1,     2,     4,     5,     6,
+       7,     8,     9,    45,     0,     3,     1,     2,     4,     5,
+       6,     7,     8,     9,     0,    34,     3,     0,     0,     0,
+       0,     6,    35,     0,     0,     0,     0,     0,     0,    36,
+      37
 };
 
 static const yytype_int8 yycheck[] =
 {
-       0,     5,     6,     7,     9,     8,     8,     8,     8,     0,
-       3,     4,     3,     4,    11,    15,     9,    21,    23,    12,
-      20,    26,     3,    14,    15,    16,    17,    18,    33,    33,
-       3,     4,    32,    36,    36,    36,    36,    10,     3,     4,
-       6,    14,    15,    16,    17,    18,     3,    13,     8,    14,
-      15,    16,    17,    18,     6,     9,     6,     9,    12,     8,
-      12,     3,     4,     7,     5,     8,    -1,    20,     8
+       0,    10,    10,    10,     9,     8,     3,     8,     3,     3,
+      10,    14,    15,     7,     8,     9,     3,     4,     8,    22,
+      23,    22,    23,    17,    11,     9,    13,    10,    22,    11,
+      30,    18,     0,    23,    10,     3,     4,    46,    46,    46,
+      34,    35,    36,    37,    38,    13,    46,    27,    16,    17,
+      18,    19,    20,    21,     3,     4,     7,     5,    38,    30,
+      10,     8,    -1,    12,    13,     3,     4,    16,    17,    18,
+      19,    20,    21,    10,    -1,    13,     3,     4,    16,    17,
+      18,    19,    20,    21,    -1,     8,    13,    -1,    -1,    -1,
+      -1,    18,    15,    -1,    -1,    -1,    -1,    -1,    -1,    22,
+      23
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,     4,    14,    15,    16,    17,    18,    20,    21,
-      23,    24,    25,    26,    27,    11,     3,     3,    26,    27,
-       9,    12,    22,    26,    26,     0,    21,    23,    24,    22,
-       8,     8,     6,     5,    27,     7,    20,    26,    22,    22,
-       8,     8,    27,    22,    26,    10,    13
+       0,     3,     4,    13,    16,    17,    18,    19,    20,    21,
+      25,    26,    28,    29,    30,    31,    32,     9,    31,    32,
+       3,     3,     9,    31,    31,    31,     0,    26,    28,    29,
+      11,    27,    10,    10,     8,    15,    22,    23,     5,    31,
+      14,     7,    31,    27,    10,    10,    25,    31,    31,    31,
+      31,    27,    31,    12
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1402,131 +1426,119 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 63 "vlang.y"
-    {;;}
+#line 73 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 64 "vlang.y"
-    {;;}
+#line 74 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 65 "vlang.y"
-    {;;}
+#line 75 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 66 "vlang.y"
-    {;;}
+#line 76 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 67 "vlang.y"
-    {;;}
+#line 77 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 68 "vlang.y"
-    {;;}
+#line 78 "vlang.y"
+    {nullifyGlobals();;}
     break;
 
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 71 "vlang.y"
-    {fprintf(yyout, "\tfor(int i = 0; i < %s; i++)\n{\n", (yyvsp[(2) - (2)].exp));;}
+#line 81 "vlang.y"
+    {fprintf(yyout, "\tfor(int itr_i = 0; itr_i < %s; itr_i++)\n{\n", (yyvsp[(2) - (2)].exp));;}
     break;
 
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 72 "vlang.y"
+#line 82 "vlang.y"
     {fprintf(yyout, "if(%s){", (yyvsp[(2) - (2)].exp));;}
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 75 "vlang.y"
+#line 85 "vlang.y"
     {fprintf(yyout,"\t}\n");;}
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 76 "vlang.y"
-    {
-															 cpyTokenVal((yyvsp[(1) - (3)].str), buff);
-														  	 cpyTokenVal((yyvsp[(2) - (3)].exp), buff);
-														  	 cpyTokenVal((yyvsp[(3) - (3)].str), buff);
-														  	 strcpy((yyval.id), buff);
-														  	 buff[0] = '\n';
-														  	 indice = 0;
-															   ;}
+#line 88 "vlang.y"
+    {;;}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 86 "vlang.y"
+#line 89 "vlang.y"
     {;;}
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 87 "vlang.y"
-    {;;}
+#line 90 "vlang.y"
+    {printCommandPrint((yyvsp[(2) - (2)].exp));;}
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 88 "vlang.y"
-    {printCommandPrint((yyvsp[(2) - (2)].exp));;}
+#line 93 "vlang.y"
+    {printAssignment((yyvsp[(1) - (3)].exp),(yyvsp[(3) - (3)].exp));;}
     break;
 
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 89 "vlang.y"
-    {	cpyTokenVal((yyvsp[(2) - (3)].exp), buff);
-														cpyTokenVal((yyvsp[(3) - (3)].id), buff);
-														printCommandPrint(buff);
-														buff[0] = '\n';
-														indice = 0;
-													  ;}
+#line 94 "vlang.y"
+    {;;}
     break;
 
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 95 "vlang.y"
-    {printCommandPrint((yyvsp[(2) - (2)].id));;}
+#line 97 "vlang.y"
+    {fprintf(yyout,"\tint %s;\n", (yyvsp[(2) - (2)].id));;}
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
 #line 98 "vlang.y"
-    {printAssignment((yyvsp[(1) - (3)].id),(yyvsp[(3) - (3)].exp));;}
+    {fprintf(yyout,"\tint %s[%s];\n", (yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].num)); markVector((yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].num));;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 99 "vlang.y"
+#line 101 "vlang.y"
     {;;}
     break;
 
@@ -1534,64 +1546,86 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 102 "vlang.y"
-    {fprintf(yyout,"\tint %s;\n", (yyvsp[(2) - (2)].id));;}
+    {printOperator((yyvsp[(1) - (3)].exp),(yyvsp[(3) - (3)].exp),(yyvsp[(2) - (3)].str), (yyval.exp));;}
     break;
 
   case 20:
 
 /* Line 1455 of yacc.c  */
 #line 103 "vlang.y"
-    {fprintf(yyout,"\tint %s[%s];\n", (yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].num)); markVector((yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].num));;}
+    {printOperator((yyvsp[(1) - (3)].exp),(yyvsp[(3) - (3)].exp),(yyvsp[(2) - (3)].str), (yyval.exp));;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 106 "vlang.y"
-    {;;}
+#line 104 "vlang.y"
+    {printDotProduct((yyvsp[(1) - (3)].exp),(yyvsp[(3) - (3)].exp), (yyval.exp));;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 107 "vlang.y"
-    {cpyTokenVal((yyvsp[(1) - (3)].exp), buff);
-														  cpyTokenVal((yyvsp[(2) - (3)].str), buff);
-														  cpyTokenVal((yyvsp[(3) - (3)].id), buff);
-														  strcpy((yyval.exp), buff);
-														  buff[0] = '\n';
-														  indice = 0;
-														  ;}
+#line 105 "vlang.y"
+    {printParenthesesExp((yyvsp[(2) - (3)].exp), (yyval.exp));
+															 buff[0] = '\n';
+														  	 indice = 0;
+															;}
     break;
 
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 116 "vlang.y"
-    {;;}
+#line 109 "vlang.y"
+    {printComplex((yyvsp[(1) - (3)].exp),(yyvsp[(3) - (3)].exp),  (yyval.exp));;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 117 "vlang.y"
+#line 112 "vlang.y"
     {;;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 118 "vlang.y"
-    {printIndexing((yyvsp[(1) - (3)].id), (yyvsp[(3) - (3)].id));
-														strcpy((yyval.id), buff);
-														buff[0] = '\n';
-														indice = 0;;}
+#line 113 "vlang.y"
+    {printConstVector((yyvsp[(1) - (1)].exp), (yyval.exp));;}
+    break;
+
+  case 26:
+
+/* Line 1455 of yacc.c  */
+#line 114 "vlang.y"
+    {printf("\t\t%s\n", (yyvsp[(1) - (1)].num));;}
+    break;
+
+  case 27:
+
+/* Line 1455 of yacc.c  */
+#line 115 "vlang.y"
+    {printConstVector((yyvsp[(1) - (3)].exp), (yyval.exp));
+															printIndexing((yyval.exp), (yyvsp[(3) - (3)].exp), (yyval.exp));
+															strcpy((yyval.exp), buff);
+															buff[0] = '\0';
+															indice = 0;;}
+    break;
+
+  case 28:
+
+/* Line 1455 of yacc.c  */
+#line 120 "vlang.y"
+    {printIndexing((yyvsp[(1) - (3)].id), (yyvsp[(3) - (3)].exp), (yyval.exp));
+															strcpy((yyval.exp), buff);
+															buff[0] = '\0';
+															indice = 0;;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1595 "vlang.tab.c"
+#line 1629 "vlang.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1803,22 +1837,183 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 124 "vlang.y"
+#line 126 "vlang.y"
                      /* C code */
 
+//print complex  Exp
+
+void printComplex(char * left,char* right,  char * dest){
+		
+	printCommandPrint(left);
+	strcpy(dest, right);
+
+}
+//Print dot product between 2 vectors or between scalar and vector
+void printDotProduct(char* left, char* right, char *dest){
+
+	int lVal = isVector(left);
+	int rVal = isVector(right);
+
+	if(lVal != -1 && rVal != -1)
+	{
+		// fprintf(yyout, "dotProduct(%s, %s, %s, -1);\n",right, left, vectorSize[rVal]);
+		cpyTokenVal("dotProduct(", buff);
+		cpyTokenVal(right, buff);
+		cpyTokenVal("," , buff);
+		cpyTokenVal(left, buff);
+		cpyTokenVal(",", buff);
+		cpyTokenVal(vectorSize[rVal], buff);
+		cpyTokenVal(",-1)", buff);
+		strcpy(dest, buff);
+		buff[0] =  '\0';
+		indice = 0;
+	}
+	else if(rVal == -1){		
+		
+		cpyTokenVal("dotProduct(", buff);
+		cpyTokenVal(left, buff);
+		cpyTokenVal("," , buff);
+		cpyTokenVal("NULL", buff);
+		cpyTokenVal(",", buff);
+		cpyTokenVal(vectorSize[lVal], buff);
+		cpyTokenVal(",", buff);
+		cpyTokenVal(right, buff);
+		cpyTokenVal(")", buff);
+		strcpy(dest, buff);
+		buff[0] =  '\0';
+		indice = 0;
+	}
+	else if(lVal == -1){		
+		cpyTokenVal("dotProduct(", buff);
+		cpyTokenVal(right, buff);
+		cpyTokenVal("," , buff);
+		cpyTokenVal("NULL", buff);
+		cpyTokenVal(",", buff);
+		cpyTokenVal(vectorSize[rVal], buff);
+		cpyTokenVal(",", buff);
+		cpyTokenVal(left, buff);
+		cpyTokenVal(")", buff);
+		strcpy(dest, buff);
+		buff[0] =  '\0';
+		indice = 0;
+	}
+
+	
+
+}
+
+//print parentheses accodring to the exp in them
+void printParenthesesExp(char* exp, char * dest){
+	
+	int vec = isVector(exp);
+
+	if(vec == -1){
+		cpyTokenVal("(", buff);
+		cpyTokenVal(exp, buff);
+		cpyTokenVal(")", buff);
+		strcpy(dest, buff);
+	}
+	else
+	{
+			strcpy(dest, exp);
+	}
+
+}
+
+//print the actions preformed with vXv | vXs | sXv | sxs
+void printOperator(char * left, char * right, char* op, char * dest){
+
+	int lVal = isVector(left);
+	int rVal = isVector(right);
+
+	//check if the right or left side of the operator is a vector 
+	if(lVal != -1 || rVal != -1){
+		
+		int counter = 0;
+		char num[11];
+		itoa(cntTmpVec++,num, 10);
+		strcpy(dest, "myTmpVec");
+		strcat(dest,num);
+		num[0] = '\0';
+		
+		if(lVal >= 0 && rVal >= 0)
+		{
+			fprintf(yyout,"int * %s = twoVectorsOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
+			counter = atoi(vectorSize[lVal]);
+			itoa(counter, num , 10);
+
+		}
+		else if(lVal >= 0 && rVal <= 0){
+			fprintf(yyout,"int * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
+			counter = atoi(vectorSize[lVal]);
+			itoa(counter, num , 10);
+		}
+		else if(lVal <= 0 && rVal >= 0){
+			fprintf(yyout,"int * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest, right,left,vectorSize[rVal],  op);
+			counter = atoi(vectorSize[rVal]);
+			itoa(counter, num , 10);
+		}
+		markVector(dest,num);
+	}
+	else
+	{
+		cpyTokenVal(left, buff);
+		cpyTokenVal(op, buff);
+		cpyTokenVal(right, buff);
+		strcpy(dest,buff);
+		buff[0] = '\0';
+		indice = 0;
+	}
+
+}  
+
+//print Const vector
+void printConstVector(char *vec, char* dest )
+{
+	//get only outer parts of vector
+	const int size = strlen(vec);
+
+	char *tmp = malloc(size*sizeof(char));
+		for(int i = 0; i < size; i++){
+		tmp[i] = ' ';
+	}
+	tmp[size] = '\0'; 
+
+	int counter = 1;
+	
+	for(int i=1; i < size - 1; i++)
+	{
+		tmp[i-1] = vec[i];
+		if(vec[i] == ',')
+			counter++;
+	}
+	char num[11];
+	itoa(cntTmpVec++,num, 10);
+	strcpy(dest, "myTmpVec");
+	strcat(dest,num);
+	num[0] = '\0';
+
+	fprintf(yyout, "int %s[] = {%s};",dest, tmp);
+	
+	itoa(counter, num , 10);
+	markVector(dest,num);
+}
+
+
 //print Indexing 
-void printIndexing(char * leftHand, char * rightHand)
+void printIndexing(char * leftHand, char * rightHand, char* dest)
 {
 	int right = isVector(rightHand);
+	int left = isVector(leftHand);
 
-	if(right == -1)
+	if(right == -1 && isTmpVecExist[0] == 0)
 	{
 		cpyTokenVal(leftHand, buff);
 		cpyTokenVal("[", buff);
 		cpyTokenVal(rightHand, buff);
 		cpyTokenVal("]", buff);
 	}
-	else
+	else if(right != -1 || isTmpVecExist[0] == 1)
 	{
 		char * tmp = "indexArray(";
 		cpyTokenVal(tmp, buff);
@@ -1826,10 +2021,10 @@ void printIndexing(char * leftHand, char * rightHand)
 		cpyTokenVal(",", buff);
 		cpyTokenVal(rightHand, buff);
 		cpyTokenVal(",", buff);
-		cpyTokenVal(vectorSize[right], buff);
+		cpyTokenVal(vectorSize[left], buff);
 		cpyTokenVal(")", buff);
 		isTmpVecExist[0] = 1;
-		isTmpVecExist[1] = atoi(vectorSize[right]);
+		isTmpVecExist[1] = atoi(vectorSize[left]);		
 	}
 
 }
@@ -1846,9 +2041,9 @@ void printAssignment(char * leftHand, char * rightHand)
 	{
 		if(isTmpVecExist[0])
 		{
-			fprintf(yyout, "\ntmp = %s;", rightHand);
-			fprintf(yyout, "\nassignArrayToArray(%s, %d, tmp);\n", leftHand, isTmpVecExist[1]);
-			fprintf(yyout, "\nfree(tmp);");
+			fprintf(yyout, "\n\ttmp = %s;", rightHand);
+			fprintf(yyout, "\n\tassignArrayToArray(%s, %d, tmp);\n", leftHand, isTmpVecExist[1]);
+			fprintf(yyout, "\n\tfree(tmp);\n");
 
 			//nullify tmp vector array bytes
 			isTmpVecExist[0] = 0;
@@ -1874,9 +2069,9 @@ void printCommandPrint(char * name)
 
 	if(isTmpVecExist[0]){
 		
-		fprintf(yyout, "\ntmp = %s;", name);
-		fprintf(yyout, "\tprintArray(tmp, %d);\n", isTmpVecExist[1]);
-		fprintf(yyout, "\nfree(tmp);");		
+		fprintf(yyout, "\t\ttmp = %s;", name);
+		fprintf(yyout, "\t\tprintArray(tmp, %d);\n", isTmpVecExist[1]);
+		fprintf(yyout, "\t\tfree(tmp);\n");		
 		//nullify tmp vector array bytes
 		isTmpVecExist[0] = 0;
 		isTmpVecExist[1] = 0;
@@ -1904,6 +2099,14 @@ void cpyTokenVal(char * src, char * dest)
 	dest[indice] = '\0';	
 }
 
+//print vectors array
+void printVecs(){
+	for(int i=0; i<cntVec; i++){
+		printf("vec - %s : %s\n", vectorSymbol[i], vectorSize[i]);
+	}
+}
+
+
 //Push new vector name into the vector symbol array
 void markVector(char *vec, char* size)
 {
@@ -1912,15 +2115,7 @@ void markVector(char *vec, char* size)
 	(cntVec)++;
 }
 
-//print vectors array
-void printVecs(){
-	for(int i=0; i<cntVec; i++){
-		printf("vec - %s : %s\n", vectorSymbol[i], vectorSize[i]);
-	}
-}
-
 //Check if name of Identifier is vector representation
-
 int isVector(char * name)
 {
 	//if name is not vector return -1; 
@@ -1938,25 +2133,63 @@ int isVector(char * name)
 	return vec;
 }
 
+//nullify all global varible values after every line
+void nullifyGlobals(){
+	buff[0] = '\0';
+	indice = 0;
+
+	isTmpVecExist[0] = 0;
+	isTmpVecExist[1] = 0;
+	
+}
+
 //build C output building blocks
 void buildFormat(FILE * out){
 
 	fprintf(out, "#include <stdio.h>\n#include <stdlib.h>\n");
 
+	//Modifying scalar to arrays assigment handling functions
 	fprintf(out, "\nvoid assignScalarToArray(int * vec,int size, int scl)\n");
-	fprintf(out , "{\nfor(int i=0; i< size; i++){\n\tvec[i] = scl;\n}\n}\n");
-
+	fprintf(out , "{\nfor(int i=0; i< size; i++){\n\tvec[i] = scl;\n}\n}\n\n");
+	
+	//Modifing arrays to array assigment handling functions
 	fprintf(out, "\nvoid assignArrayToArray(int * vec1,int size, int * vec2)\n");
 	fprintf(out , "{\nfor(int i=0; i< size; i++){\n\tvec1[i] = vec2[i];\n}\n}\n");
 
+	//Indexing vectors(arrays) handling functions
 	fprintf(out, "\tint* indexArray(int *vec1, int * vec2, int size)\n{\n");
 	fprintf(out, "\tint *tmp = malloc(sizeof(int)*size);\nfor(int i=0; i< size; i++){\n");
-	fprintf(out , "\t\ttmp[i] = vec1[vec2[i]];\n}\n\treturn tmp;}\n");
+	fprintf(out , "\t\ttmp[i] = vec1[vec2[i]];\n}\n\treturn tmp;}\n\n");
 	
+	//Printing arrays handlind function
 	fprintf(out, "\nvoid printArray(int * vec,int size)\n{\n");
 	fprintf(out, "\tprintf(\"[\");\n");
 	fprintf(out , "\n\tfor(int i=0; i< size-1; i++){\n\tprintf(\"%%d,\" ,vec[i]);\n}\n");
-	fprintf(out, "\tprintf(\"%%d]\", vec[size -1]);\n}\n");
+	fprintf(out, "\tprintf(\"%%d]\\n\", vec[size -1]);\n}\n\n");
+
+
+	//Vector - vector handling function 
+	fprintf(out,"\nint *twoVectorsOperations(int *vec1, int *vec2, int size, char op){\n");
+	fprintf(out, "int *res = malloc(sizeof(int) * size);\nswitch (op)");
+	fprintf(out,"\n{\tcase '+':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] + vec2[i];\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '-':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] - vec2[i];\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '*':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] * vec2[i];\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '/':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] / vec2[i];\t\t}\tbreak;}\nreturn res;}\n");
+
+	//Vector - scalar handling function
+	fprintf(out,"\nint *vectorScalarOperations(int *vec1, int scl, int size, char op){\n");
+	fprintf(out, "int *res = malloc(sizeof(int) * size);\nswitch (op)");
+	fprintf(out,"\n{\tcase '+':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] + scl;\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '-':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] - scl;\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '*':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] * scl;\t\t}\tbreak;\n");
+	fprintf(out,"\n\tcase '/':\t\tfor (int i = 0; i < size; i++){\t\t\tres[i] = vec1[i] / scl;\t\t}\tbreak;}\nreturn res;}\n");
+
+	//Dot product operation between  2 vectors or vector and scaalar handling function
+	fprintf(out,"\nint dotProduct(int *vec1,int * vec2, int size, int scl){\n");
+	fprintf(out, "int result = 0;\nfor (int i = 0; i < size; i++){\n");
+	fprintf(out, "\tif(scl == -1)\nresult += vec1[i] * vec2[i];\nelse\nresult += vec1[i] * scl;\n}\nreturn result;\n}\n");
+	
+
 
 	fprintf(out , "\nint main(void)\n{\nint *tmp;\n");
 	} 

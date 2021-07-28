@@ -44,17 +44,22 @@
      Equal = 260,
      Operator = 261,
      ArrSize = 262,
-     Semicolon = 263,
-     OpenBracket = 264,
-     ClosingBracket = 265,
-     Index = 266,
-     OpenParentheses = 267,
-     ClosingParentheses = 268,
-     Scl = 269,
-     Vec = 270,
-     Loop = 271,
-     Print = 272,
-     If = 273
+     Dot = 263,
+     Index = 264,
+     Semicolon = 265,
+     OpenBracket = 266,
+     CloseBracket = 267,
+     OpenParentheses = 268,
+     CloseParentheses = 269,
+     Comma = 270,
+     Scl = 271,
+     Vec = 272,
+     TmpVector = 273,
+     Loop = 274,
+     Print = 275,
+     If = 276,
+     OperatorLow = 277,
+     OperatorHigh = 278
    };
 #endif
 
@@ -65,18 +70,18 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 52 "vlang.y"
+#line 62 "vlang.y"
 
 	char str[1];
 	char num[11];
-	char exp[24];
+	char exp[100];
 	char id[12]; 
 	char type[3];
 	
 
 
 /* Line 1676 of yacc.c  */
-#line 80 "vlang.tab.h"
+#line 85 "vlang.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
