@@ -5,7 +5,7 @@ lex.yy.c: vlang.tab.c vlang.l
 	flex vlang.l
 
 vlang.tab.c: vlang.y
-	bison -d vlang.y --debug
+	bison -d vlang.y
 
 clean: 
 	del lex.yy.c vlang.tab.c vlang.tab.h vlang.exe

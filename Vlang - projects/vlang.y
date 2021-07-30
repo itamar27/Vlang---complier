@@ -12,7 +12,7 @@ void buildFormat(FILE * out);
 void markVector(char *vec, char *size);
 int isVector(char * vec);
 void nullifyGlobals();
-void printVecs();    //DELETE ME! AND MY IMPLEMENTATION!
+void printFreeVectors();
 
 /*print to file commands*/
 void printAssignment(char * left, char * right); 
@@ -23,6 +23,7 @@ void printOperator(char * left, char * right, char* op, char* dest);
 void printDotProduct(char* left, char* right, char *dest);
 void printParenthesesExp(char * exp, char *dest);
 void printComplex(char *left, char* right,char * dest);
+void printMinus(char* op, char*  exp, char *dest);
  
 //Global varibales declartion
 extern FILE* yyin;
@@ -52,7 +53,7 @@ char vectorSize[256][11];
 %type <exp> Statement
 
 %right <str> Equal
-%left <str> Comma
+%left <str>  Comma
 %left  <str> OperatorLow  
 %left  <str> OperatorHigh 
 %left  <str> Index Dot
@@ -104,14 +105,14 @@ Exp 			: Term 									 	{;}
 				| Exp Dot Exp						 		{printDotProduct($1,$3, $$);}
 				| OpenParentheses Exp CloseParentheses	  	{printParenthesesExp($2, $$);
 															 buff[0] = '\n';
-														  	 indice = 0;
-															}
+														  	 indice = 0;}
 				| Exp Comma Exp								{printComplex($1,$3,  $$);}
+				| OperatorLow Exp 							{printMinus($1,$2,$$);}
 				;
 
 Term 			: Identifier 								{;}
 				| TmpVector									{printConstVector($1, $$);}
-	 			| Number									{printf("\t\t%s\n", $1);}
+	 			| Number									{;}
 				| TmpVector Index Exp 						{printConstVector($1, $$);
 															printIndexing($$, $3, $$);
 															strcpy($$, buff);
@@ -124,6 +125,27 @@ Term 			: Identifier 								{;}
      			;
 
 %%                     /* C code */
+
+//print Minus
+void printMinus(char* op,char*  exp, char *dest){
+
+	if(strcmp("-",op) != 0){
+		return;
+	}
+
+	int vec = isVector(exp);
+	
+	if(vec == -1){
+		strcpy(dest,"-");
+		strcpy(dest,exp);
+		return;
+	}
+
+	else{
+		printOperator(exp, "-1", "*", dest );
+	}
+	
+}
 
 //print complex  Exp
 
@@ -141,7 +163,6 @@ void printDotProduct(char* left, char* right, char *dest){
 
 	if(lVal != -1 && rVal != -1)
 	{
-		// fprintf(yyout, "dotProduct(%s, %s, %s, -1);\n",right, left, vectorSize[rVal]);
 		cpyTokenVal("dotProduct(", buff);
 		cpyTokenVal(right, buff);
 		cpyTokenVal("," , buff);
@@ -183,8 +204,6 @@ void printDotProduct(char* left, char* right, char *dest){
 		indice = 0;
 	}
 
-	
-
 }
 
 //print parentheses accodring to the exp in them
@@ -223,18 +242,18 @@ void printOperator(char * left, char * right, char* op, char * dest){
 		
 		if(lVal >= 0 && rVal >= 0)
 		{
-			fprintf(yyout,"int * %s = twoVectorsOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
+			fprintf(yyout,"\n\tint * %s = twoVectorsOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
 			counter = atoi(vectorSize[lVal]);
 			itoa(counter, num , 10);
 
 		}
 		else if(lVal >= 0 && rVal <= 0){
-			fprintf(yyout,"int * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
+			fprintf(yyout,"\n\tint * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest,left, right,vectorSize[lVal],  op);
 			counter = atoi(vectorSize[lVal]);
 			itoa(counter, num , 10);
 		}
 		else if(lVal <= 0 && rVal >= 0){
-			fprintf(yyout,"int * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest, right,left,vectorSize[rVal],  op);
+			fprintf(yyout,"\n\tint * %s = vectorScalarOperations(%s, %s, %s, \'%s\');\n", dest, right,left,vectorSize[rVal],  op);
 			counter = atoi(vectorSize[rVal]);
 			itoa(counter, num , 10);
 		}
@@ -274,7 +293,7 @@ void printConstVector(char *vec, char* dest )
 	}
 	char num[11];
 	itoa(cntTmpVec++,num, 10);
-	strcpy(dest, "myTmpVec");
+	strcpy(dest, "tmpVec");
 	strcat(dest,num);
 	num[0] = '\0';
 
@@ -384,12 +403,6 @@ void cpyTokenVal(char * src, char * dest)
 	dest[indice] = '\0';	
 }
 
-//print vectors array
-void printVecs(){
-	for(int i=0; i<cntVec; i++){
-		printf("vec - %s : %s\n", vectorSymbol[i], vectorSize[i]);
-	}
-}
 
 
 //Push new vector name into the vector symbol array
@@ -428,6 +441,14 @@ void nullifyGlobals(){
 	
 }
 
+//print free for all dynamic cast vectors
+void printFreeVectors(){
+
+	for(int i = 0; i < 256; i++){
+		if(strncmp(vectorSymbol[i],"myTmpVec",8) == 0)
+			fprintf(yyout, "\nfree(%s);\n", vectorSymbol[i]);
+	}
+}
 //build C output building blocks
 void buildFormat(FILE * out){
 
@@ -481,9 +502,6 @@ void buildFormat(FILE * out){
 
 // Main func
 int main (int argc,char **argv) {
-	//#ifdef YYDEBUG
-	//yydebug = 1;
-	//#endif
 
 	if(argc==2 || argc == 3)
      {
@@ -506,6 +524,7 @@ int main (int argc,char **argv) {
 	 
 	buildFormat(yyout);
 	yyparse ( );
+	printFreeVectors();
 	fprintf(yyout, "\nreturn 0;\n}");
 	return 0;
 }

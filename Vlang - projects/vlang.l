@@ -14,7 +14,8 @@ number             [0-9]+
 operators_high     [*/]
 operators_low      [+-]
 size               [{][0-9]+[}]
-tmpVector          \[[ ]*[0-9]+([ ]*,[ ]*[0-9]+[ ]*)*\] 
+tmpVector          \[[ ]*-?[ ]*[0-9]+([ ]*,[ ]*-?[ ]*[0-9]+[ ]*)*\]
+                   
 %%
 "scl"                  {return Scl;}
 "vec"                  {return Vec;}
@@ -34,6 +35,7 @@ tmpVector          \[[ ]*[0-9]+([ ]*,[ ]*[0-9]+[ ]*)*\]
 {number}               {sscanf(yytext, "%s", yylval.num); return Number;}
 {operators_high}       {sscanf(yytext, "%s", yylval.str); return OperatorHigh;}
 {operators_low}        {sscanf(yytext, "%s", yylval.str); return OperatorLow;}
+
 {size}                 {copyInnerText(yytext, yylval.num); return ArrSize;}
 {tmpVector}            {copyTmpVectorText(yytext,yylval.exp); return TmpVector;}
 [ \t\n]                {;}
